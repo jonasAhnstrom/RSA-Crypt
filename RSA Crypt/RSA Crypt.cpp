@@ -80,6 +80,8 @@ PrivateKey crack(PrivateKey privK, PublicKey pubK)
 
 int main()
 {
+	// Gratts! Du har nu klarat uppgift 1.
+
 	PublicKey pubK;
 	pubK.n = 225481;
 	pubK.e = 31;
