@@ -168,7 +168,6 @@ void printMeassage(Message m, int n)
 	}
 }
 
-
 //
 // Task 2
 //
@@ -209,7 +208,6 @@ void task2()
 	// Print decrypted message
 	printMeassage(m, 1);
 }
-
 
 //
 // Task 3
@@ -254,6 +252,49 @@ void task3()
 	printMeassage(m, 1);
 }
 
+//
+// Task 4
+//
+void task4()
+{
+	// Prime numbers p and q
+	Factors f;
+	f.p = 71;
+	f.q = 59;
+
+	// Keys task 3
+	PublicKey pubK;
+	pubK.n = f.p * f.q;
+	pubK.e = 127;
+	PrivateKey privK;
+	privK.n = pubK.n;
+
+	int r = (f.p - 1)*(f.q - 1);
+
+	// Find d
+	unsigned long long x, y;
+	gcdExtended(pubK.e, r, &x, &y);
+	privK.d = 1023;
+
+	Message m;
+
+	// Clear text
+	char* Mu = "Uppgift 4 avklarad!";
+	for (size_t i = 0; Mu[i] != '\0'; i++)
+	{
+		m.M.push_back(Mu[i]);
+	}
+
+	// Encrypt message
+	m = encrypt(m, pubK);
+
+	// Decrypt task 2
+	m = decrypt(m, privK);
+
+	// Print decrypted message
+	printMeassage(m, 1);
+}
+
 
 int main()
 {
@@ -279,6 +320,8 @@ int main()
 	task2();
 
 	task3();
+
+	task4();
 
 	getchar();
 	return 0;
