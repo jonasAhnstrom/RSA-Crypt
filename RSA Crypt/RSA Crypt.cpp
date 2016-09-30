@@ -152,7 +152,7 @@ Message newMessage(char* string)
 }
 
 
-void printMeassage(Message m, int n)
+void printMessage(Message m, int n)
 {
 	switch (n)
 	{
@@ -232,13 +232,13 @@ void task2()
 	//m.K = Ke;
 
 	// Print encrypted message
-	printMeassage(m, 0);
+	printMessage(m, 0);
 
 	// Decrypt message
 	decrypt(&m, privK);
 
 	// Print decrypted message
-	printMeassage(m, 1);
+	printMessage(m, 1);
 }
 
 
@@ -268,7 +268,7 @@ void task3()
 		decrypt(&m, privK);
 
 		// Print decrypted message
-		printMeassage(m, 1);
+		printMessage(m, 1);
 	}
 }
 
@@ -299,7 +299,7 @@ void task4()
 		decrypt(&m, privK);
 
 		// Print decrypted message
-		printMeassage(m, 1);
+		printMessage(m, 1);
 	}
 }
 
