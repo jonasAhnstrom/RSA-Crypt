@@ -24,8 +24,8 @@ typedef struct {
 } PrivateKey;
 
 typedef struct {
-	unsigned long long p = 0;
-	unsigned long long q = 0;
+	int p = 0;
+	int q = 0;
 } Factors;
 
 
@@ -49,15 +49,15 @@ unsigned long long expBySqu(unsigned long long x, unsigned long long n)
 }
 
 
-Message decrypt(Message m, PrivateKey privK)
+void decrypt(Message* m, PrivateKey privK)
 {
 	if (privK.d == 0)
 	{
-		return m;
+		return;
 	}
-	if (m.K.size() <= 0)
+	if (m->K.size() <= 0)
 	{
-		return m;
+		return;
 	}
 	/*
 	for (size_t i = 0; i < m.K.size(); i++)
@@ -69,31 +69,29 @@ Message decrypt(Message m, PrivateKey privK)
 
 		m.M[i] = expBySqu(m.K[i], privK.d);
 	}*/
-	m.M.assign(m.K.size(), 1);
+	m->M.assign(m->K.size(), 1);
 	//unsigned long long d = 8114231289041741;
 	for (size_t i = 0; i < privK.d; i++)
 	{
-		for (size_t j = 0; j < m.K.size(); j++)
+		for (size_t j = 0; j < m->K.size(); j++)
 		{
-			m.M[j] = (m.M[j] * m.K[j]) % (long long)privK.n;
+			m->M[j] = (m->M[j] * m->K[j]) % (long long)privK.n;
 		}
 	}
-	return m;
 }
 
 
-Message encrypt(Message m, PublicKey pubK)
+void encrypt(Message* m, PublicKey pubK)
 {
-	m.K.assign(m.M.size(), 1);
+	m->K.assign(m->M.size(), 1);
 
 	for (size_t i = 0; i < (pubK.e); i++)
 	{
-		for (size_t j = 0; j < m.M.size(); j++)
+		for (size_t j = 0; j < m->M.size(); j++)
 		{
-			m.K[j] = fmod(m.K[j] * (int)m.M[j], pubK.n);
+			m->K[j] = fmod(m->K[j] * (int)m->M[j], pubK.n);
 		}
 	}
-	return m;
 }
 
 
@@ -123,8 +121,6 @@ unsigned long long gcdExtended(unsigned long long a, unsigned long long b, unsig
 PrivateKey crack(PrivateKey privK, PublicKey pubK)
 {
 	unsigned long long n = pubK.n;
-	unsigned long long e = pubK.e;
-
 	long long nSqr = floor(sqrt(n));
 
 	while (n % nSqr != 0) {
@@ -135,14 +131,24 @@ PrivateKey crack(PrivateKey privK, PublicKey pubK)
 	}
 	unsigned long long p = nSqr;
 	unsigned long long q = n / nSqr;
-
 	unsigned long long r = (p - 1)*(q - 1);
-
+	unsigned long long e = pubK.e;
 	unsigned long long x, y;
 	gcdExtended(e, r, &x, &y);
 	privK.d = x;
 
 	return privK;
+}
+
+
+Message newMessage(char* string)
+{
+	Message m;
+	for (size_t i = 0; string[i] != '\0'; i++)
+	{
+		m.M.push_back(string[i]);
+	}
+	return m;
 }
 
 
@@ -168,6 +174,38 @@ void printMeassage(Message m, int n)
 	}
 }
 
+
+int IsPrime(unsigned int number) {
+	if (number <= 1) return 0; // zero and one are not prime
+	unsigned int i;
+	for (i = 2; i*i <= number; i++) {
+		if (number % i == 0) return 0;
+	}
+	return 1;
+}
+
+
+int createKeys(Factors f, PublicKey* pubK, PrivateKey* privK, int e)
+{
+	if (!IsPrime(e))
+	{
+		return 0;
+	}
+	pubK->n = f.p * f.q;
+	pubK->e = e;
+
+	privK->n = pubK->n;
+
+	int r = (f.p - 1)*(f.q - 1);
+
+	// Find d
+	unsigned long long x, y;
+	gcdExtended(pubK->e, r, &x, &y);
+	privK->d = x;
+	return 1;
+}
+
+
 //
 // Task 2
 //
@@ -179,19 +217,16 @@ void task2()
 	pubK.e = 31;
 	PrivateKey privK;
 	privK.n = pubK.n;
-
-	Message m;
-
+	// Crack key to get 'd'
+	privK = crack(privK, pubK);
+	
 	// Clear text
-	char* Mu = "Hej från Jonas Ahnström! aka ahjo15ja.";
-	for (size_t i = 0; Mu[i] != '\0'; i++)
-	{
-		m.M.push_back(Mu[i]);
-	}
-	// Encrypt message
-	m = encrypt(m, pubK);
+	Message m = newMessage("Hej från Jonas Ahnström! aka ahjo15ja.");
 
-	// Encrypted
+	// Encrypt message
+	encrypt(&m, pubK);
+
+	// Encrypted test message
 	//vector<long long> Ke = { 162022,173841,21220,148202,186791,208649,26238,114928,81193,148202,87071,153402,81193,162571,100943,148202,119009,216925,81193,100943,61689,208649,26238,27023,119294,130756,148202,119009,14195,162571,148202,162571,216925,21220,153402,67061,102531,21220,162571 };
 	//vector<long long> Ke = { 139940, 208649, 148615, 14195, 148202, 12314, 173841, 186791 };
 	//m.K = Ke;
@@ -199,15 +234,13 @@ void task2()
 	// Print encrypted message
 	printMeassage(m, 0);
 
-	// Crack task 2 key to get 'd'
-	privK = crack(privK, pubK);
-
-	// Decrypt task 2
-	m = decrypt(m, privK);
+	// Decrypt message
+	decrypt(&m, privK);
 
 	// Print decrypted message
 	printMeassage(m, 1);
 }
+
 
 //
 // Task 3
@@ -219,37 +252,24 @@ void task3()
 	f.p = 1999;
 	f.q = 3593;
 
-	// Keys task 3
+	// Keys
 	PublicKey pubK;
-	pubK.n = f.p * f.q;
-	pubK.e = 7;
 	PrivateKey privK;
-	privK.n = pubK.n;
 
-	int r = (f.p - 1)*(f.q - 1);
-
-	// Find d
-	unsigned long long x, y;
-	gcdExtended(pubK.e, r, &x, &y);
-	privK.d = x;
-
-	Message m;
-
-	// Clear text
-	char* Mu = "Hallojsan!";
-	for (size_t i = 0; Mu[i] != '\0'; i++)
+	if (createKeys(f, &pubK, &privK, 7))
 	{
-		m.M.push_back(Mu[i]);
+		// Clear text
+		Message m = newMessage("Hallojsan!");
+		
+		// Encrypt message
+		encrypt(&m, pubK);
+
+		// Decrypt message
+		decrypt(&m, privK);
+
+		// Print decrypted message
+		printMeassage(m, 1);
 	}
-
-	// Encrypt message
-	m = encrypt(m, pubK);
-	
-	// Decrypt task 2
-	m = decrypt(m, privK);
-
-	// Print decrypted message
-	printMeassage(m, 1);
 }
 
 //
@@ -262,37 +282,25 @@ void task4()
 	f.p = 71;
 	f.q = 59;
 
-	// Keys task 3
+	// Keys
 	PublicKey pubK;
-	pubK.n = f.p * f.q;
-	pubK.e = 127;
 	PrivateKey privK;
-	privK.n = pubK.n;
+	//privK.d = 1023;
 
-	int r = (f.p - 1)*(f.q - 1);
-
-	// Find d
-	unsigned long long x, y;
-	gcdExtended(pubK.e, r, &x, &y);
-	privK.d = 1023;
-
-	Message m;
-
-	// Clear text
-	char* Mu = "Uppgift 4 avklarad!";
-	for (size_t i = 0; Mu[i] != '\0'; i++)
+	if (createKeys(f, &pubK, &privK, 127))
 	{
-		m.M.push_back(Mu[i]);
+		// Clear text
+		Message m = newMessage("Uppgift 4 avklarad!");
+
+		// Encrypt message
+		encrypt(&m, pubK);
+
+		// Decrypt message
+		decrypt(&m, privK);
+
+		// Print decrypted message
+		printMeassage(m, 1);
 	}
-
-	// Encrypt message
-	m = encrypt(m, pubK);
-
-	// Decrypt task 2
-	m = decrypt(m, privK);
-
-	// Print decrypted message
-	printMeassage(m, 1);
 }
 
 
@@ -303,7 +311,7 @@ int main()
 		printf("error while setting locale\n");
 	}
 
-	// TEST d = 8114231289041741
+	// TEST keys; d = 8114231289041741
 	/*PublicKey pubK;
 	pubK.n = 10142789312725007;
 	pubK.e = 5;
