@@ -62,12 +62,10 @@ void decrypt(Message* m, PrivateKey privK)
 	/*
 	for (size_t i = 0; i < m.K.size(); i++)
 	{
-		m.M[i] = (m.M[i] * m.K[i]) % privK.n;
-
-		long long pw = pow(m.K[i], privK.d);
-		long long modn = pw % privK.n;
-
-		m.M[i] = expBySqu(m.K[i], privK.d);
+	m.M[i] = (m.M[i] * m.K[i]) % privK.n;
+	long long pw = pow(m.K[i], privK.d);
+	long long modn = pw % privK.n;
+	m.M[i] = expBySqu(m.K[i], privK.d);
 	}*/
 	m->M.assign(m->K.size(), 1);
 	//unsigned long long d = 8114231289041741;
@@ -97,7 +95,7 @@ void encrypt(Message* m, PublicKey pubK)
 
 // Extended Euclidean Algorithm
 // TODO: Fails for big a or b
-unsigned long long gcdExtended(unsigned long long a, unsigned long long b, unsigned long long *x, unsigned long long *y)
+long long gcdExtended(long long a, long long b, long long *x, long long *y)
 {
 	// Base Case
 	if (a == 0)
@@ -107,8 +105,8 @@ unsigned long long gcdExtended(unsigned long long a, unsigned long long b, unsig
 		return b;
 	}
 
-	unsigned long long x1, y1; // To store results of recursive call
-	unsigned long long gcd = gcdExtended(b%a, a, &x1, &y1);
+	long long x1, y1; // To store results of recursive call
+	long long gcd = gcdExtended(b%a, a, &x1, &y1);
 
 	// Update x and y using results of recursive call
 	*x = y1 - (b / a) * x1;
@@ -133,7 +131,7 @@ PrivateKey crack(PrivateKey privK, PublicKey pubK)
 	unsigned long long q = n / nSqr;
 	unsigned long long r = (p - 1)*(q - 1);
 	unsigned long long e = pubK.e;
-	unsigned long long x, y;
+	long long x, y;
 	gcdExtended(e, r, &x, &y);
 	privK.d = x;
 
@@ -161,13 +159,15 @@ void printMessage(Message m, int n)
 		{
 			printf("%I64d ", m.K[i]);
 		};
+		printf("\n");
 		break;
 	case 1:
-		printf("\n\n");
+		printf("\n");
 		for (size_t i = 0; i < m.M.size(); i++)
 		{
 			printf("%c", m.M[i]);
 		};
+		printf("\n");
 		break;
 	default:
 		break;
@@ -189,6 +189,12 @@ int createKeys(Factors f, PublicKey* pubK, PrivateKey* privK, int e)
 {
 	if (!IsPrime(e))
 	{
+		cout << endl << "Error: e is not prime" << endl;
+		return 0;
+	}
+	if (f.p <= 1 || f.q <= 1)
+	{
+		cout << endl << "Error: p or q is not prime" << endl;
 		return 0;
 	}
 	pubK->n = f.p * f.q;
@@ -199,9 +205,12 @@ int createKeys(Factors f, PublicKey* pubK, PrivateKey* privK, int e)
 	int r = (f.p - 1)*(f.q - 1);
 
 	// Find d
-	unsigned long long x, y;
+	long long x, y;
 	gcdExtended(pubK->e, r, &x, &y);
 	privK->d = x;
+	if (x < 0) {
+		privK->d = (r + x) % r;
+	}
 	return 1;
 }
 
@@ -219,7 +228,7 @@ void task2()
 	privK.n = pubK.n;
 	// Crack key to get 'd'
 	privK = crack(privK, pubK);
-	
+
 	// Clear text
 	Message m = newMessage("Hej från Jonas Ahnström! aka ahjo15ja.");
 
@@ -249,6 +258,7 @@ void task3()
 {
 	// Prime numbers p and q
 	Factors f;
+
 	f.p = 1999;
 	f.q = 3593;
 
@@ -256,20 +266,23 @@ void task3()
 	PublicKey pubK;
 	PrivateKey privK;
 
-	if (createKeys(f, &pubK, &privK, 7))
+	if (!createKeys(f, &pubK, &privK, 7))
 	{
-		// Clear text
-		Message m = newMessage("Hallojsan!");
-		
-		// Encrypt message
-		encrypt(&m, pubK);
-
-		// Decrypt message
-		decrypt(&m, privK);
-
-		// Print decrypted message
-		printMessage(m, 1);
+		cout << endl << "Error: creating keys" << endl;
+		return;
 	}
+	// Clear text
+	Message m = newMessage("Hallojsan!");
+
+	// Encrypt message
+	encrypt(&m, pubK);
+
+	// Decrypt message
+	decrypt(&m, privK);
+
+	// Print decrypted message
+	printMessage(m, 1);
+
 }
 
 //
@@ -287,20 +300,22 @@ void task4()
 	PrivateKey privK;
 	//privK.d = 1023;
 
-	if (createKeys(f, &pubK, &privK, 127))
+	if (!createKeys(f, &pubK, &privK, 127))
 	{
-		// Clear text
-		Message m = newMessage("Uppgift 4 avklarad!");
-
-		// Encrypt message
-		encrypt(&m, pubK);
-
-		// Decrypt message
-		decrypt(&m, privK);
-
-		// Print decrypted message
-		printMessage(m, 1);
+		cout << endl << "Error: creating keys" << endl;
+		return;
 	}
+	// Clear text
+	Message m = newMessage("Uppgift 4 avklarad!");
+
+	// Encrypt message
+	encrypt(&m, pubK);
+
+	// Decrypt message
+	decrypt(&m, privK);
+
+	// Print decrypted message
+	printMessage(m, 1);
 }
 
 
@@ -334,4 +349,3 @@ int main()
 	getchar();
 	return 0;
 }
-
